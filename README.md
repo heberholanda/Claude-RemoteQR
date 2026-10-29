@@ -76,7 +76,7 @@ hooks/
   hooks.json          points at the hooks module
   register.tsx        hooks /remote-control and draws the band
   qr.ts               dependency-free QR Code encoder
-  register.test.tsx   tests
+tests/                claude plugin test: hooks, encoder against known-good codes
 types/index.d.ts      the mod's state contract
 docs/                 screenshots
 ```
