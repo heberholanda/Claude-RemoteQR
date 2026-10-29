@@ -1,0 +1,6 @@
+{
+  "name": "claude-remoteqr",
+  "owner": { "name": "Heber Holanda" },
+  "description": "QR Code for the Claude Code /remote-control link",
+  "plugins": [{ "name": "remote-qr", "source": "./" }]
+}
