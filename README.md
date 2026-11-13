@@ -83,10 +83,9 @@ docs/                 screenshots
 
 ## Development
 
-Clone the repository and load the mod straight from the folder; it reloads whenever you save:
+Clone the repository, then load the mod straight from the folder; it reloads whenever you save:
 
 ```sh
-git clone https://github.com/heberholanda/Claude-RemoteQR
 claude --plugin-dir ./Claude-RemoteQR
 ```
 

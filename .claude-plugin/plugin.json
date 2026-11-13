@@ -1,5 +1,6 @@
 {
   "name": "remote-qr",
+  "displayName": "Remote QR",
   "version": "0.1.2",
   "description": "Shows a QR Code for the /remote-control link so you can open the session on your phone",
   "author": { "name": "Heber Holanda" },
@@ -7,5 +8,6 @@
   "homepage": "https://github.com/heberholanda/Claude-RemoteQR",
   "repository": "https://github.com/heberholanda/Claude-RemoteQR",
   "keywords": ["remote-control", "qr-code", "mobile"],
+  "icon": ".claude-plugin/icon.png",
   "types": "./types/index.d.ts"
 }
