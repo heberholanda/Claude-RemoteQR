@@ -66,6 +66,16 @@ claude plugin uninstall remote-qr
 
 The mod only reads local files and makes no network requests. The session link never leaves your machine: it is shown only in your terminal, inside the QR Code.
 
+### What each hook does
+
+Every hook passes its event on unchanged; none blocks, rewrites or answers anything for Claude Code:
+
+- `command.run`, only for `/remote-control`: reads the session file before the command runs, lets the command run exactly as it would without the mod, and returns its result untouched. If the session was not connected before, it then waits in the background for the link and shows the QR Code.
+- `prompt.submit`: hides the QR Code when you send your next message; the prompt goes on as you typed it.
+- `ui.render` on the band above the prompt: draws the QR Code there, and keeps whatever other mods drew below it.
+
+Files it reads: `~/.claude/sessions/*.json` (or the folder set by `CLAUDE_CONFIG_DIR`), only to find this session's `bridgeSessionId`. It reads the `USERPROFILE`, `HOME` and `CLAUDE_CONFIG_DIR` environment variables only to locate that folder. It runs no programs and writes no files.
+
 ## Layout
 
 ```
