@@ -194,14 +194,19 @@ export const OCTANTS = Array.from(
   ' 𜺨𜺫🮂𜴀▘𜴁𜴂𜴃𜴄▝𜴅𜴆𜴇𜴈▀𜴉𜴊𜴋𜴌🯦𜴍𜴎𜴏𜴐𜴑𜴒𜴓𜴔𜴕𜴖𜴗𜴘𜴙𜴚𜴛𜴜𜴝𜴞𜴟🯧𜴠𜴡𜴢𜴣𜴤𜴥𜴦𜴧𜴨𜴩𜴪𜴫𜴬𜴭𜴮𜴯𜴰𜴱𜴲𜴳𜴴𜴵🮅𜺣𜴶𜴷𜴸𜴹𜴺𜴻𜴼𜴽𜴾𜴿𜵀𜵁𜵂𜵃𜵄▖𜵅𜵆𜵇𜵈▌𜵉𜵊𜵋𜵌▞𜵍𜵎𜵏𜵐▛𜵑𜵒𜵓𜵔𜵕𜵖𜵗𜵘𜵙𜵚𜵛𜵜𜵝𜵞𜵟𜵠𜵡𜵢𜵣𜵤𜵥𜵦𜵧𜵨𜵩𜵪𜵫𜵬𜵭𜵮𜵯𜵰𜺠𜵱𜵲𜵳𜵴𜵵𜵶𜵷𜵸𜵹𜵺𜵻𜵼𜵽𜵾𜵿𜶀𜶁𜶂𜶃𜶄𜶅𜶆𜶇𜶈𜶉𜶊𜶋𜶌𜶍𜶎𜶏▗𜶐𜶑𜶒𜶓▚𜶔𜶕𜶖𜶗▐𜶘𜶙𜶚𜶛▜𜶜𜶝𜶞𜶟𜶠𜶡𜶢𜶣𜶤𜶥𜶦𜶧𜶨𜶩𜶪𜶫▂𜶬𜶭𜶮𜶯𜶰𜶱𜶲𜶳𜶴𜶵𜶶𜶷𜶸𜶹𜶺𜶻𜶼𜶽𜶾𜶿𜷀𜷁𜷂𜷃𜷄𜷅𜷆𜷇𜷈𜷉𜷊𜷋𜷌𜷍𜷎𜷏𜷐𜷑𜷒𜷓𜷔𜷕𜷖𜷗𜷘𜷙𜷚▄𜷛𜷜𜷝𜷞▙𜷟𜷠𜷡𜷢▟𜷣▆𜷤𜷥█',
 )
 
+// Index = 1x2 cell bitmask, bit 0 = upper module, bit 1 = lower module.
+const HALVES = [' ', '▀', '▄', '█']
+
 /**
- * `text` as a QR Code in octant characters, 2x4 modules per cell, which keeps
- * modules square on a 1:2 terminal cell. Light modules are drawn as the
- * foreground, so draw it light on dark.
+ * `text` as a QR Code in block characters, light modules drawn as the
+ * foreground (draw it light on dark), with a light margin of `quiet` modules.
+ * Half blocks draw 1x2 modules per cell, octants 2x4: both keep modules square
+ * on a 1:2 terminal cell, but octant modules are too small for many phones.
  */
-export function qrText(text: string, quiet = 2): string | null {
+export function qrText(text: string, quiet = 4, octants = false): string | null {
   const m = qrMatrix(text)
   if (!m) return null
+  const [w, h, glyphs] = octants ? [2, 4, OCTANTS] : [1, 2, HALVES]
   const size = m.length + quiet * 2
   const light = (x: number, y: number) => {
     const mx = x - quiet
@@ -209,15 +214,29 @@ export function qrText(text: string, quiet = 2): string | null {
     return x < size && y < size && !(mx >= 0 && my >= 0 && mx < m.length && my < m.length && m[my][mx])
   }
   const lines: string[] = []
-  for (let y = 0; y < size; y += 4) {
+  for (let y = 0; y < size; y += h) {
     let line = ''
-    for (let x = 0; x < size; x += 2) {
+    for (let x = 0; x < size; x += w) {
       let mask = 0
-      for (let dy = 0; dy < 4; dy++)
-        for (let dx = 0; dx < 2; dx++) if (light(x + dx, y + dy)) mask |= 1 << (dy * 2 + dx)
-      line += OCTANTS[mask]
+      for (let dy = 0; dy < h; dy++)
+        for (let dx = 0; dx < w; dx++) if (light(x + dx, y + dy)) mask |= 1 << (dy * w + dx)
+      line += glyphs[mask]
     }
     lines.push(line)
   }
   return lines.join('\n')
+}
+
+/**
+ * The largest code that fits in `rows` lines: half blocks with the widest
+ * margin that fits (4 down to 1), else octants, marked `compact`.
+ */
+export function qrFit(text: string, rows: number): { qr: string; compact: boolean } | null {
+  for (let quiet = 4; quiet >= 1; quiet--) {
+    const qr = qrText(text, quiet)
+    if (!qr) return null
+    if (qr.split('\n').length <= rows) return { qr, compact: false }
+  }
+  const qr = qrText(text, 2, true)
+  return qr ? { qr, compact: true } : null
 }

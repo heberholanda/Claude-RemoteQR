@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { Register } from 'claude-code'
 
 import type { ShownUrl } from '../types'
-import { qrText } from './qr'
+import { qrFit } from './qr'
 
 const shown = atom({ plugin: 'remote-qr', key: 'url' } as const, null as ShownUrl)
 
@@ -59,8 +59,10 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const url = await read($, shown)
-    const qr = url && qrText(url)
-    if (e.props.hasSurvey || !qr) return next(e)
+    // The text sits beside the code, so every row goes to it; one is left for
+    // another mod's line in this band. A taller tree would scroll and break the scan.
+    const fit = url ? qrFit(url, e.props.maxRows - 1) : null
+    if (e.props.hasSurvey || !fit) return next(e)
 
     const { Box, Button, Text } = $.ui.resolve(e)
     // Other mods draw here too: keep what they drew below the code.
@@ -69,15 +71,26 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column">
         <Box>
-          <Text dimColor>Scan with your phone to continue there </Text>
-          <Button key="close" label="Close" onPress={() => update($, shown, () => null)} />
+          <Box flexDirection="column">
+            {fit.qr.split('\n').map(line => (
+              // Fixed colors so the code reads right on light and dark terminals alike.
+              <Text color="#ffffff" backgroundColor="#000000">
+                {line}
+              </Text>
+            ))}
+          </Box>
+          <Box flexDirection="column" marginLeft={2}>
+            {(fit.compact
+              ? ['Make the terminal', 'taller for a code', 'phones read easily']
+              : ['Scan with your phone', 'to continue there']
+            ).map(line => (
+              <Text dimColor>{line}</Text>
+            ))}
+            <Box marginTop={1}>
+              <Button key="close" label="Close" onPress={() => update($, shown, () => null)} />
+            </Box>
+          </Box>
         </Box>
-        {qr.split('\n').map(line => (
-          // Fixed colors so the code reads right on light and dark terminals alike.
-          <Text color="#ffffff" backgroundColor="#000000">
-            {line}
-          </Text>
-        ))}
         {below}
       </Box>
     )

@@ -19,7 +19,7 @@ The directory refused v0.1.2 (75918be): it accepts mods, and code files such as 
 ## README rules
 
 - The section **What each hook does** names every hooked event in backticks, the files and environment variables the mod reads, and anything it would send. Update it with the code.
-- No download-and-run text: no `curl … | sh`, and no `git clone` followed by a run command in one code block.
+- No download-and-run text: never pipe a download (curl, wget) into a shell, and no `git clone` followed by a run command in one code block.
 
 ## Manifest rules (`.claude-plugin/plugin.json`)
 

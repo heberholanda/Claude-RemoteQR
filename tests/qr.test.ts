@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { OCTANTS, qrMatrix, qrText } from '../hooks/qr'
+import { OCTANTS, qrFit, qrMatrix, qrText } from '../hooks/qr'
 
 // Known-good codes: each was decoded back to its input by jsQR when recorded.
 // One hex string per row, most significant bit = leftmost module, 1 = dark.
@@ -206,19 +206,40 @@ test('the octant table is complete and anchored on the classic blocks', async ()
   expect(OCTANTS[0b00000100]).toBe('𜴀') // first octant: dot 3 alone
 })
 
-test('the rendered text draws exactly the matrix, light modules on', async () => {
-  const quiet = 2
-  for (const { text } of Object.values(GOLDEN)) {
-    const m = qrMatrix(text) ?? []
-    const lines = (qrText(text, quiet) ?? '').split('\n').map(line => Array.from(line))
-    const size = m.length + quiet * 2
-    expect(lines.length).toBe(Math.ceil(size / 4))
-    for (let y = 0; y < size; y++)
-      for (let x = 0; x < size; x++) {
-        const mask = OCTANTS.indexOf(lines[y >> 2]?.[x >> 1] ?? '')
-        const lit = ((mask >> (((y & 3) << 1) | (x & 1))) & 1) === 1
-        const inCode = x >= quiet && y >= quiet && x < size - quiet && y < size - quiet
-        expect(lit).toBe(!(inCode && m[y - quiet]?.[x - quiet]))
-      }
+const draws = (octants: boolean, glyphs: string[], w: number, h: number) => {
+  for (const quiet of [1, 2, 4]) {
+    for (const { text } of Object.values(GOLDEN)) {
+      const m = qrMatrix(text) ?? []
+      const lines = (qrText(text, quiet, octants) ?? '').split('\n').map(line => Array.from(line))
+      const size = m.length + quiet * 2
+      expect(lines.length).toBe(Math.ceil(size / h))
+      for (let y = 0; y < size; y++)
+        for (let x = 0; x < size; x++) {
+          const mask = glyphs.indexOf(lines[Math.floor(y / h)]?.[Math.floor(x / w)] ?? '')
+          const lit = ((mask >> ((y % h) * w + (x % w))) & 1) === 1
+          const inCode = x >= quiet && y >= quiet && x < size - quiet && y < size - quiet
+          expect(lit).toBe(!(inCode && m[y - quiet]?.[x - quiet]))
+        }
+    }
   }
+}
+
+test('half blocks draw exactly the matrix, light modules on', async () => {
+  draws(false, [' ', '▀', '▄', '█'], 1, 2)
+})
+
+test('octants draw exactly the matrix, light modules on', async () => {
+  draws(true, OCTANTS, 2, 4)
+})
+
+test('the code fits the rows it is given', async () => {
+  const url = 'https://claude.ai/code/session_01NT88s2NA5q56M8sJRceev9' // version 4: 33 modules
+  const rows = (r: number) => qrFit(url, r)?.qr.split('\n').length
+  expect(qrFit(url, 30)).toEqual({ qr: qrText(url, 4) ?? '', compact: false }) // 41 / 2 = 21 rows
+  expect(qrFit(url, 21)?.compact).toBe(false)
+  expect(rows(21)).toBe(21)
+  expect(qrFit(url, 20)?.qr).toBe(qrText(url, 3) ?? '') // 39 / 2 = 20 rows
+  expect(qrFit(url, 18)?.qr).toBe(qrText(url, 1) ?? '') // 35 / 2 = 18 rows
+  expect(qrFit(url, 17)).toEqual({ qr: qrText(url, 2, true) ?? '', compact: true })
+  expect(qrFit('x'.repeat(214), 99)).toBe(null)
 })
